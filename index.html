@@ -52,6 +52,7 @@ button.primary {
     border: none;
     border-radius: 8px;
     font-size: 17px;
+    cursor: pointer;
 }
 button.primary:active {
     opacity: 0.8;
@@ -152,11 +153,21 @@ request.onsuccess = e => {
     loadEntries();
 };
 
+// Pre-fill today's date
+function getTodayString() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+}
+document.getElementById("date").value = getTodayString();
+
 // Tax year helpers
 function getTaxYearKey(dateStr) {
     const d = new Date(dateStr);
     const year = d.getFullYear();
-    const taxYearStart = new Date(year, 3, 6);
+    const taxYearStart = new Date(year, 3, 6); // 6 April
     if (d >= taxYearStart) {
         const next = year + 1;
         return `${year}_${String(next).slice(-2)}`;
@@ -197,7 +208,7 @@ document.getElementById("add").onclick = () => {
 };
 
 function clearForm() {
-    document.getElementById("date").value = "";
+    document.getElementById("date").value = getTodayString(); // reset to today
     document.getElementById("from").value = "";
     document.getElementById("to").value = "";
     document.getElementById("purpose").value = "";
@@ -260,7 +271,7 @@ function generateCSV(entries) {
     return csv;
 }
 
-// Export CSV
+// Export CSV — iOS Safari compatible
 document.getElementById("exportYear").onclick = () => {
     const select = document.getElementById("taxYearSelect");
     const key = select.value;
@@ -278,17 +289,44 @@ document.getElementById("exportYear").onclick = () => {
     downloadCSV(csv, fileName);
 };
 
-// Download CSV
 function downloadCSV(csv, fileName) {
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    if (isIOS && navigator.share) {
+        // iOS: use Web Share API so the user can save to Files, email, etc.
+        const blob = new Blob([csv], { type: "text/csv" });
+        const file = new File([blob], fileName, { type: "text/csv" });
+        navigator.share({
+            files: [file],
+            title: fileName,
+        }).catch(err => {
+            // User cancelled or share failed — fall back to data URI
+            iosDataURIFallback(csv, fileName);
+        });
+    } else {
+        // Desktop / non-iOS: standard blob download
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+}
+
+// Fallback for older iOS without navigator.share file support
+function iosDataURIFallback(csv, fileName) {
+    const encoded = encodeURIComponent(csv);
+    const dataUri = "data:text/csv;charset=utf-8," + encoded;
     const a = document.createElement("a");
-    a.href = url;
+    a.href = dataUri;
     a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
 }
 </script>
 
