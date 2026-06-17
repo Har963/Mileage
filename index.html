@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Business Mileage</title>
-
 <style>
+* { box-sizing: border-box; }
 body {
     font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     margin: 0;
@@ -17,10 +17,79 @@ header {
     color: white;
     padding: 16px;
     text-align: center;
+    position: relative;
 }
-h1, h2 {
-    margin: 0 0 12px 0;
+header h1 { margin: 0 0 4px 0; }
+#currentUserBadge {
+    font-size: 13px;
+    opacity: 0.85;
 }
+#switchUserBtn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+h2 { margin: 0 0 12px 0; }
+
+/* Profile screen */
+#profileScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    padding: 24px;
+}
+#profileScreen h2 { font-size: 22px; margin-bottom: 8px; }
+#profileScreen p { color: #666; margin-bottom: 20px; text-align: center; }
+.profile-list { width: 100%; max-width: 360px; margin-bottom: 16px; }
+.profile-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 10px;
+    background: white;
+    border: 2px solid #0078d4;
+    border-radius: 10px;
+    font-size: 17px;
+    color: #0078d4;
+    cursor: pointer;
+    text-align: left;
+}
+.profile-btn:active { background: #e8f1fb; }
+.new-profile-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 360px;
+}
+.new-profile-row input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+.new-profile-row button {
+    padding: 12px 18px;
+    background: #0078d4;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* Main app */
+#appScreen { display: none; }
 .card {
     background: white;
     margin: 16px;
@@ -34,14 +103,13 @@ label {
     font-weight: 600;
     font-size: 14px;
 }
-input, select {
+input[type=text], input[type=date], input[type=number], select {
     width: 100%;
     padding: 10px;
     margin-top: 4px;
     border-radius: 8px;
     border: 1px solid #ccc;
     font-size: 16px;
-    box-sizing: border-box;
 }
 button.primary {
     width: 100%;
@@ -54,9 +122,7 @@ button.primary {
     font-size: 17px;
     cursor: pointer;
 }
-button.primary:active {
-    opacity: 0.8;
-}
+button.primary:active { opacity: 0.8; }
 table {
     width: 100%;
     border-collapse: collapse;
@@ -75,85 +141,105 @@ footer {
 }
 </style>
 </head>
-
 <body>
+
 <header>
     <h1>Business Mileage</h1>
+    <div id="currentUserBadge"></div>
+    <button id="switchUserBtn" style="display:none">Switch user</button>
 </header>
 
-<section class="card">
-    <h2>Add journey</h2>
+<!-- Profile selection screen -->
+<div id="profileScreen">
+    <h2>Who are you?</h2>
+    <p>Select your name or add a new profile.</p>
+    <div class="profile-list" id="profileList"></div>
+    <div class="new-profile-row">
+        <input type="text" id="newProfileName" placeholder="Add new name…" maxlength="40">
+        <button id="addProfileBtn">Add</button>
+    </div>
+</div>
 
-    <label>Date</label>
-    <input type="date" id="date">
+<!-- Main app screen -->
+<div id="appScreen">
+    <section class="card">
+        <h2>Add journey</h2>
+        <label>Date</label>
+        <input type="date" id="date">
+        <label>From</label>
+        <input type="text" id="from">
+        <label>To</label>
+        <input type="text" id="to">
+        <label>Business purpose</label>
+        <input type="text" id="purpose">
+        <label>Miles</label>
+        <input type="number" id="miles" step="0.1">
+        <label>Vehicle registration</label>
+        <input type="text" id="vehicle">
+        <label>Rate (£/mile)</label>
+        <input type="number" id="rate" step="0.01" value="0.45">
+        <button id="add" class="primary">Add journey</button>
+    </section>
 
-    <label>From</label>
-    <input type="text" id="from">
+    <section class="card">
+        <h2>Journeys</h2>
+        <table id="logTable">
+            <thead>
+                <tr>
+                    <th>Date</th><th>From</th><th>To</th><th>Miles</th><th>Amount</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
 
-    <label>To</label>
-    <input type="text" id="to">
+    <section class="card">
+        <h2>Export</h2>
+        <p>Select a tax year and export a CSV.</p>
+        <label>Tax year</label>
+        <select id="taxYearSelect"></select>
+        <button id="exportYear" class="primary">Export selected tax year CSV</button>
+    </section>
 
-    <label>Business purpose</label>
-    <input type="text" id="purpose">
-
-    <label>Miles</label>
-    <input type="number" id="miles" step="0.1">
-
-    <label>Vehicle registration</label>
-    <input type="text" id="vehicle">
-
-    <label>Rate (£/mile)</label>
-    <input type="number" id="rate" step="0.01" value="0.45">
-
-    <button id="add" class="primary">Add journey</button>
-</section>
-
-<section class="card">
-    <h2>Journeys</h2>
-    <table id="logTable">
-        <thead>
-        <tr>
-            <th>Date</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Miles</th>
-            <th>Amount</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</section>
-
-<section class="card">
-    <h2>Export</h2>
-    <p>Select a tax year and export a CSV.</p>
-    <label>Tax year</label>
-    <select id="taxYearSelect"></select>
-    <button id="exportYear" class="primary">Export selected tax year CSV</button>
-</section>
-
-<footer>
-    <small>Data stored locally on this device.</small>
-</footer>
+    <footer><small>Data stored locally on this device.</small></footer>
+</div>
 
 <script>
-// IndexedDB setup
+// ── State ──────────────────────────────────────────────
 let db;
+let currentUser = null;
 let entriesCache = [];
 
-const request = indexedDB.open("MileageDB", 1);
-request.onupgradeneeded = e => {
-    db = e.target.result;
-    if (!db.objectStoreNames.contains("entries")) {
-        db.createObjectStore("entries", { keyPath: "id", autoIncrement: true });
-    }
-};
-request.onsuccess = e => {
-    db = e.target.result;
-    loadEntries();
-};
+// ── Profiles stored in localStorage ───────────────────
+function getProfiles() {
+    try { return JSON.parse(localStorage.getItem("mileage_profiles") || "[]"); }
+    catch { return []; }
+}
+function saveProfiles(profiles) {
+    localStorage.setItem("mileage_profiles", JSON.stringify(profiles));
+}
+function getLastUser() {
+    return localStorage.getItem("mileage_last_user") || null;
+}
+function setLastUser(name) {
+    localStorage.setItem("mileage_last_user", name);
+}
 
-// Pre-fill today's date
+// ── IndexedDB ──────────────────────────────────────────
+function openDB(callback) {
+    const req = indexedDB.open("MileageDB", 1);
+    req.onupgradeneeded = e => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains("entries")) {
+            const store = d.createObjectStore("entries", { keyPath: "id", autoIncrement: true });
+            store.createIndex("user", "user", { unique: false });
+        }
+    };
+    req.onsuccess = e => { db = e.target.result; callback(); };
+    req.onerror = () => alert("Could not open database.");
+}
+
+// ── Date helpers ───────────────────────────────────────
 function getTodayString() {
     const now = new Date();
     const y = now.getFullYear();
@@ -161,66 +247,113 @@ function getTodayString() {
     const d = String(now.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
 }
-document.getElementById("date").value = getTodayString();
 
-// Tax year helpers
+// ── Tax year helpers ───────────────────────────────────
 function getTaxYearKey(dateStr) {
     const d = new Date(dateStr);
     const year = d.getFullYear();
-    const taxYearStart = new Date(year, 3, 6); // 6 April
+    const taxYearStart = new Date(year, 3, 6);
     if (d >= taxYearStart) {
-        const next = year + 1;
-        return `${year}_${String(next).slice(-2)}`;
+        return `${year}_${String(year + 1).slice(-2)}`;
     } else {
-        const prev = year - 1;
-        return `${prev}_${String(year).slice(-2)}`;
+        return `${year - 1}_${String(year).slice(-2)}`;
     }
 }
-function getTaxYearLabelFromKey(key) {
+function getTaxYearLabel(key) {
     const [start, end] = key.split("_");
     return `${start}-${end}`;
 }
 
-// Add entry
+// ── Profile screen ─────────────────────────────────────
+function showProfileScreen() {
+    document.getElementById("profileScreen").style.display = "flex";
+    document.getElementById("appScreen").style.display = "none";
+    document.getElementById("switchUserBtn").style.display = "none";
+    document.getElementById("currentUserBadge").textContent = "";
+    renderProfileList();
+}
+
+function renderProfileList() {
+    const profiles = getProfiles();
+    const list = document.getElementById("profileList");
+    list.innerHTML = "";
+    profiles.forEach(name => {
+        const btn = document.createElement("button");
+        btn.className = "profile-btn";
+        btn.textContent = name;
+        btn.onclick = () => selectUser(name);
+        list.appendChild(btn);
+    });
+}
+
+document.getElementById("addProfileBtn").onclick = () => {
+    const input = document.getElementById("newProfileName");
+    const name = input.value.trim();
+    if (!name) return;
+    const profiles = getProfiles();
+    if (profiles.map(p => p.toLowerCase()).includes(name.toLowerCase())) {
+        alert("That name already exists.");
+        return;
+    }
+    profiles.push(name);
+    saveProfiles(profiles);
+    input.value = "";
+    selectUser(name);
+};
+
+document.getElementById("newProfileName").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("addProfileBtn").click();
+});
+
+function selectUser(name) {
+    currentUser = name;
+    setLastUser(name);
+    document.getElementById("currentUserBadge").textContent = name;
+    document.getElementById("switchUserBtn").style.display = "block";
+    document.getElementById("profileScreen").style.display = "none";
+    document.getElementById("appScreen").style.display = "block";
+    document.getElementById("date").value = getTodayString();
+    loadEntries();
+}
+
+document.getElementById("switchUserBtn").onclick = () => {
+    currentUser = null;
+    showProfileScreen();
+};
+
+// ── Add journey ────────────────────────────────────────
 document.getElementById("add").onclick = () => {
-    const date = document.getElementById("date").value;
-    const from = document.getElementById("from").value.trim();
-    const to = document.getElementById("to").value.trim();
-    const purpose = document.getElementById("purpose").value.trim();
-    const miles = parseFloat(document.getElementById("miles").value);
-    const vehicle = document.getElementById("vehicle").value.trim();
-    const rate = parseFloat(document.getElementById("rate").value);
+    const date     = document.getElementById("date").value;
+    const from     = document.getElementById("from").value.trim();
+    const to       = document.getElementById("to").value.trim();
+    const purpose  = document.getElementById("purpose").value.trim();
+    const miles    = parseFloat(document.getElementById("miles").value);
+    const vehicle  = document.getElementById("vehicle").value.trim();
+    const rate     = parseFloat(document.getElementById("rate").value);
 
     if (!date || !from || !to || !purpose || !vehicle || isNaN(miles) || isNaN(rate)) {
         alert("Please complete all fields.");
         return;
     }
 
-    const amount = miles * rate;
-    const entry = { date, from, to, purpose, miles, vehicle, rate, amount };
-
+    const entry = { user: currentUser, date, from, to, purpose, miles, vehicle, rate, amount: miles * rate };
     const tx = db.transaction("entries", "readwrite");
     tx.objectStore("entries").add(entry);
-    tx.oncomplete = () => {
-        loadEntries();
-        clearForm();
-    };
+    tx.oncomplete = () => { loadEntries(); clearForm(); };
 };
 
 function clearForm() {
-    document.getElementById("date").value = getTodayString(); // reset to today
-    document.getElementById("from").value = "";
-    document.getElementById("to").value = "";
-    document.getElementById("purpose").value = "";
-    document.getElementById("miles").value = "";
-    document.getElementById("vehicle").value = "";
+    document.getElementById("date").value = getTodayString();
+    ["from","to","purpose","miles","vehicle"].forEach(id => {
+        document.getElementById(id).value = "";
+    });
 }
 
-// Load entries
+// ── Load & render entries ──────────────────────────────
 function loadEntries() {
     const tx = db.transaction("entries", "readonly");
-    const store = tx.objectStore("entries");
-    const req = store.getAll();
+    const index = tx.objectStore("entries").index("user");
+    const req = index.getAll(currentUser);
     req.onsuccess = () => {
         entriesCache = req.result;
         renderTable(entriesCache);
@@ -228,12 +361,10 @@ function loadEntries() {
     };
 }
 
-// Render table
 function renderTable(entries) {
     const tbody = document.querySelector("#logTable tbody");
     tbody.innerHTML = "";
     const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
-
     sorted.forEach(e => {
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -247,69 +378,47 @@ function renderTable(entries) {
     });
 }
 
-// Populate tax year dropdown
 function populateTaxYearSelect(entries) {
     const select = document.getElementById("taxYearSelect");
-    const years = new Set(entries.map(e => getTaxYearKey(e.date)));
-    const sortedKeys = Array.from(years).sort();
-
+    const keys = Array.from(new Set(entries.map(e => getTaxYearKey(e.date)))).sort();
     select.innerHTML = "";
-    sortedKeys.forEach(key => {
+    keys.forEach(key => {
         const opt = document.createElement("option");
         opt.value = key;
-        opt.textContent = getTaxYearLabelFromKey(key);
+        opt.textContent = getTaxYearLabel(key);
         select.appendChild(opt);
     });
 }
 
-// CSV generation
+// ── Export CSV ─────────────────────────────────────────
+document.getElementById("exportYear").onclick = () => {
+    const key = document.getElementById("taxYearSelect").value;
+    if (!key) { alert("No tax year selected."); return; }
+    const rows = entriesCache.filter(e => getTaxYearKey(e.date) === key);
+    if (!rows.length) { alert("No entries for that tax year."); return; }
+    const csv = generateCSV(rows);
+    const fileName = `Mileage_${currentUser.replace(/\s+/g,"_")}_${key}.csv`;
+    downloadCSV(csv, fileName);
+};
+
 function generateCSV(entries) {
     let csv = "Date,From,To,Purpose,Miles,Vehicle,Rate,Amount\n";
     entries.forEach(e => {
-        csv += `${e.date},"${e.from.replace(/"/g, '""')}","${e.to.replace(/"/g, '""')}","${e.purpose.replace(/"/g, '""')}",${e.miles},${e.vehicle},${e.rate},${e.amount}\n`;
+        const esc = s => `"${String(s).replace(/"/g,'""')}"`;
+        csv += `${e.date},${esc(e.from)},${esc(e.to)},${esc(e.purpose)},${e.miles},${esc(e.vehicle)},${e.rate},${e.amount}\n`;
     });
     return csv;
 }
 
-// Export CSV — iOS Safari compatible
-document.getElementById("exportYear").onclick = () => {
-    const select = document.getElementById("taxYearSelect");
-    const key = select.value;
-    if (!key) {
-        alert("No tax year selected.");
-        return;
-    }
-    const entriesForYear = entriesCache.filter(e => getTaxYearKey(e.date) === key);
-    if (!entriesForYear.length) {
-        alert("No entries for that tax year.");
-        return;
-    }
-    const csv = generateCSV(entriesForYear);
-    const fileName = `Mileage_${key}.csv`;
-    downloadCSV(csv, fileName);
-};
-
 function downloadCSV(csv, fileName) {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
     if (isIOS && navigator.share) {
-        // iOS: use Web Share API so the user can save to Files, email, etc.
-        const blob = new Blob([csv], { type: "text/csv" });
-        const file = new File([blob], fileName, { type: "text/csv" });
-        navigator.share({
-            files: [file],
-            title: fileName,
-        }).catch(err => {
-            // User cancelled or share failed — fall back to data URI
-            iosDataURIFallback(csv, fileName);
-        });
+        const file = new File([new Blob([csv], { type: "text/csv" })], fileName, { type: "text/csv" });
+        navigator.share({ files: [file], title: fileName })
+            .catch(() => iosDataURIFallback(csv, fileName));
     } else {
-        // Desktop / non-iOS: standard blob download
-        const blob = new Blob([csv], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
+        const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+        const a = Object.assign(document.createElement("a"), { href: url, download: fileName });
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -317,18 +426,26 @@ function downloadCSV(csv, fileName) {
     }
 }
 
-// Fallback for older iOS without navigator.share file support
 function iosDataURIFallback(csv, fileName) {
-    const encoded = encodeURIComponent(csv);
-    const dataUri = "data:text/csv;charset=utf-8," + encoded;
-    const a = document.createElement("a");
-    a.href = dataUri;
-    a.download = fileName;
+    const a = Object.assign(document.createElement("a"), {
+        href: "data:text/csv;charset=utf-8," + encodeURIComponent(csv),
+        download: fileName
+    });
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 }
-</script>
 
+// ── Boot ───────────────────────────────────────────────
+openDB(() => {
+    const last = getLastUser();
+    const profiles = getProfiles();
+    if (last && profiles.includes(last)) {
+        selectUser(last);
+    } else {
+        showProfileScreen();
+    }
+});
+</script>
 </body>
 </html>
